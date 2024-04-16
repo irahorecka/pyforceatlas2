@@ -44,13 +44,12 @@ print(">>>> Starting to install!\n")
 
 setup(
     name='fa2_modified',
-    version='0.3.8',
+    version='0.3.9',
     description='The fastest ForceAtlas2 algorithm for Python (and NetworkX)',
     long_description_content_type='text/markdown',
     long_description=long_description,
     author='Bhargav Chippada, Amin Alam',
     url='https://github.com/AminAlam/forceatlas2_maintained',
-    download_url='https://github.com/AminAlam/forceatlas2_maintained/archive/refs/tags/V0.0.1.tar.gz',
     keywords=['forceatlas2', 'networkx', 'force-directed-graph', 'force-layout', 'graph'],
     packages=['fa2_modified'],
     classifiers=[
@@ -70,6 +69,5 @@ setup(
         'igraph': ['python-igraph']
     },
     include_package_data=True,
-    package_data={'fa2_modified': ['fa2util.c']},
     **opts
 )
