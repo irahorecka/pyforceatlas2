@@ -23,9 +23,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
-      uses: docker://quay.io/pypa/manylinux2014_x86_64
+      uses: actions/setup-python@v3
       with:
-        entrypoint: /usr/local/bin/python3
         python-version: '3.9'
     - name: Install dependencies
       run: |
