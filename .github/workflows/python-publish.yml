@@ -25,7 +25,6 @@ jobs:
     - name: Set up Python
       uses: docker://quay.io/pypa/manylinux2014_x86_64
       with:
-        entrypoint: /usr/local/bin/python3
         python-version: '3.x'
     - name: Install dependencies
       run: |
