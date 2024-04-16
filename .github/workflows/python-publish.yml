@@ -37,6 +37,7 @@ jobs:
     - name: Repair wheels
       run: |
         auditwheel repair --wheel-dir dist dist/*.whl
+        rm -rf dist/*linux_x86_64*.whl
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
       with:
