@@ -70,5 +70,6 @@ setup(
         'igraph': ['python-igraph']
     },
     include_package_data=True,
+    package_data={'fa2': ['fa2util.c']},
     **opts
 )
