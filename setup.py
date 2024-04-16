@@ -44,7 +44,7 @@ print(">>>> Starting to install!\n")
 
 setup(
     name='fa2_modified',
-    version='0.3.7',
+    version='0.3.8',
     description='The fastest ForceAtlas2 algorithm for Python (and NetworkX)',
     long_description_content_type='text/markdown',
     long_description=long_description,
@@ -70,6 +70,6 @@ setup(
         'igraph': ['python-igraph']
     },
     include_package_data=True,
-    package_data={'fa2': ['fa2util.c']},
+    package_data={'fa2_modified': ['fa2util.c']},
     **opts
 )
