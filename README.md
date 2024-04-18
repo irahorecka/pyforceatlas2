@@ -1,6 +1,6 @@
 ## ForceAtlas2 for Python3 (modified/maintained version)
 
-#### This is a maintained version of fa2 [python library](https://github.com/bhargavchippada/forceatlas2). The source code is same as fa2, while this repo runs smoothly on Python 3.9+ whereas the original fa2 only runs on Python 3.8.
+#### This is a maintained version of fa2 [python library](https://github.com/bhargavchippada/forceatlas2). The source code is same as fa2, but this repo can be installed on Python 3.9+ whereas the original fa2 only runs on Python <3.8.
 --------
 
 
