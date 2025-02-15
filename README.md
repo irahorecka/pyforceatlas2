@@ -1,159 +1,118 @@
-## ForceAtlas2 for Python3 (modified/maintained version)
+# PyForceAtlas2
 
-#### This is a maintained version of fa2 [python library](https://github.com/bhargavchippada/forceatlas2). The source code is same as fa2, but this repo can be installed on Python 3.9+ whereas the original fa2 only runs on Python <3.8.
---------
+[![PyPI version](https://img.shields.io/pypi/v/pyforceatlas2.svg)](https://pypi.org/project/pyforceatlas2)
+[![License](https://img.shields.io/pypi/l/pyforceatlas2.svg)](LICENSE)
+[![Build Status](https://github.com/username/pyforceatlas2/actions/workflows/ci.yml/badge.svg)](https://github.com/username/pyforceatlas2/actions/workflows/ci.yml)
+[![DOI](https://img.shields.io/badge/DOI-10.1371/journal.pone.0098679-blue)](https://doi.org/10.1371/journal.pone.0098679)
 
+PyForceAtlas2 is a Python implementation of the [ForceAtlas2](https://doi.org/10.1371/journal.pone.0098679) graph layout algorithm. Originally designed for Gephi, this implementation is optimized for reproducible and high-performance network visualization in Python, supporting both NetworkX and igraph.
 
+## Features
 
-A port of Gephi's Force Atlas 2 layout algorithm to Python 3 (with a wrapper for NetworkX and igraph). This is the fastest python implementation available with most of the features complete. It also supports Barnes Hut approximation for maximum speedup.
-
-ForceAtlas2 is a very fast layout algorithm for force-directed graphs. It's used to spatialize a **weighted undirected** graph in 2D (Edge weight defines the strength of the connection). The implementation is based on this [paper](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679) and the corresponding [gephi-java-code](https://github.com/gephi/gephi/blob/master/modules/LayoutPlugin/src/main/java/org/gephi/layout/plugin/forceAtlas2/ForceAtlas2.java). Its really quick compared to the fruchterman reingold algorithm (spring layout) of networkx and scales well to high number of nodes (>10000).
-
-<p align="center" text-align="center">
-    <b>Spatialize a random Geometric Graph</b>
-</p>
-<p align="center">
-  <img width="460" height="300" src="https://raw.githubusercontent.com/bhargavchippada/forceatlas2/master/examples/geometric_graph.png" alt="Geometric Graph">
-</p>
+- **High Performance:** Barnes-Hut optimization for large networks.
+- **Customizable:** Fine-tune attraction, repulsion, gravity, and speed parameters.
+- **Versatile:** Seamless integration with NetworkX and igraph.
+- **Reproducible:** Easily set random seeds for deterministic layouts.
 
 ## Installation
 
-Install from pip:
+Install PyForceAtlas2 via pip:
 
-    pip install fa2_modified
-
-To build and install run from source:
-
-    python setup.py install
-
-**Cython is highly recommended if you are buidling from source as it will speed up by a factor of 10-100x depending on the graph**
-
-### Dependencies
-
--   numpy (adjacency matrix as complete matrix)
--   scipy (adjacency matrix as sparse matrix)
--   tqdm (progressbar)
--   Cython (10-100x speedup)
--   networkx (To use the NetworkX wrapper function, you obviously need NetworkX)
--   python-igraph (To use the igraph wrapper)
-
-<p align="center" text-align="center">
-    <b>Spatialize a 2D Grid</b>
-</p>
-<p align="center">
-  <img width="460" height="300" src="https://raw.githubusercontent.com/bhargavchippada/forceatlas2/master/examples/grid_graph.png" alt="Grid Graph">
-</p>
-
-## Usage
-
-from fa2_modified import ForceAtlas2
-
-Create a ForceAtlas2 object with the appropriate settings. ForceAtlas2 class contains three important methods:
-```python
-forceatlas2 (G, pos, iterations)
-# G is a graph in 2D numpy ndarray format (or) scipy sparse matrix format. You can set the edge weights (> 0) in the matrix
-# pos is a numpy array (Nx2) of initial positions of nodes
-# iterations is num of iterations to run the algorithm
-# returns a list of (x,y) pairs for each node's final position
+```bash
+pip install pyforceatlas2
 ```
-```python
-forceatlas2_networkx_layout(G, pos, iterations)
-# G is a networkx graph. Edge weights can be set (if required) in the Networkx graph
-# pos is a dictionary, as in networkx
-# iterations is num of iterations to run the algorithm
-# returns a dictionary of node positions (2D X-Y tuples) indexed by the node name
-```
-```python
-forceatlas2_igraph_layout(G, pos, iterations, weight_attr)
-# G is an igraph graph
-# pos is a numpy array (Nx2) or list of initial positions of nodes (see that the indexing matches igraph node index)
-# iterations is num of iterations to run the algorithm
-# weight_attr denotes the weight attribute's name in G.es, None by default
-# returns an igraph layout
-```
-Below is an example usage. You can also see the feature settings of ForceAtlas2 class.
+
+## Usage Example
+
+The following example demonstrates how to compute a layout for a random geometric graph and visualize it with NetworkX and Matplotlib:
 
 ```python
+"""
+Example: ForceAtlas2 Layout on a Random Geometric Graph
+--------------------------------------------------------
+
+This script generates a random geometric graph with 400 nodes,
+computes a ForceAtlas2 layout, and visualizes the result.
+"""
+
+import random
 import networkx as nx
-from fa2_modified import ForceAtlas2
 import matplotlib.pyplot as plt
+from pyforceatlas2 import ForceAtlas2
 
+# Set a random seed for reproducibility.
+random.seed(888)
+
+# Generate a random geometric graph: nodes are connected if they are within radius 0.2.
 G = nx.random_geometric_graph(400, 0.2)
 
+# Initialize ForceAtlas2 with custom parameters.
 forceatlas2 = ForceAtlas2(
-                        # Behavior alternatives
-                        outboundAttractionDistribution=True,  # Dissuade hubs
-                        linLogMode=False,  # NOT IMPLEMENTED
-                        adjustSizes=False,  # Prevent overlap (NOT IMPLEMENTED)
-                        edgeWeightInfluence=1.0,
+    outbound_attraction_distribution=False,  # Do not dissuade hubs.
+    edge_weight_influence=1.0,
+    lin_log_mode=True,                       # Use LinLog mode for attraction forces.
+    jitter_tolerance=10.0,                     # Tolerance for oscillations.
+    barnes_hut_optimize=True,                  # Enable Barnes-Hut optimization.
+    barnes_hut_theta=2.2,                      # Trade-off between accuracy and speed.
+    scaling_ratio=2.0,                         # Controls overall repulsion strength.
+    strong_gravity_mode=False,                 # Use standard gravity.
+    gravity=1.0,                               # Gravitational constant.
+    verbose=True,
+)
 
-                        # Performance
-                        jitterTolerance=1.0,  # Tolerance
-                        barnesHutOptimize=True,
-                        barnesHutTheta=1.2,
-                        multiThreaded=False,  # NOT IMPLEMENTED
+# Compute the layout. Returns a dict mapping each node to an (x, y) coordinate.
+positions = forceatlas2.forceatlas2_networkx_layout(G, pos=None, iterations=100)
 
-                        # Tuning
-                        scalingRatio=2.0,
-                        strongGravityMode=False,
-                        gravity=1.0,
-
-                        # Log
-                        verbose=True)
-
-positions = forceatlas2.forceatlas2_networkx_layout(G, pos=None, iterations=2000)
-nx.draw_networkx_nodes(G, positions, node_size=20, with_labels=False, node_color="blue", alpha=0.4)
+# Visualize the graph.
+nx.draw_networkx_nodes(G, positions, node_size=20, node_color="blue", alpha=0.4)
 nx.draw_networkx_edges(G, positions, edge_color="green", alpha=0.05)
-plt.axis('off')
+plt.axis("off")
 plt.show()
-
-# equivalently
-import igraph
-G = igraph.Graph.TupleList(G.edges(), directed=False)
-layout = forceatlas2.forceatlas2_igraph_layout(G, pos=None, iterations=2000)
-igraph.plot(G, layout).show()
 ```
-You can also take a look at forceatlas2.py file for understanding the ForceAtlas2 class and its functions better.
 
-## Features Completed
+## API Overview
 
--   **barnesHutOptimize**: Barnes Hut optimization, n<sup>2</sup> complexity to n.ln(n)
--   **gravity**: Attracts nodes to the center. Prevents islands from drifting away
--   **Dissuade Hubs**: Distributes attraction along outbound edges. Hubs attract less and thus are pushed to the borders
--   **scalingRatio**: How much repulsion you want. More makes a more sparse graph
--   **strongGravityMode**: A stronger gravity view
--   **jitterTolerance**: How much swinging you allow. Above 1 discouraged. Lower gives less speed and more precision
--   **verbose**: Shows a progressbar of iterations completed. Also, shows time taken for different force computations
--   **edgeWeightInfluence**: How much influence you give to the edges weight. 0 is "no influence" and 1 is "normal"
+The main entry point is the ForceAtlas2 class:
 
-## Documentation
+```python
+from pyforceatlas2 import ForceAtlas2
 
-You will find all the documentation in the source code
+# Initialize with desired parameters.
+forceatlas2 = ForceAtlas2(
+    outbound_attraction_distribution=False,
+    edge_weight_influence=1.0,
+    lin_log_mode=True,
+    jitter_tolerance=10.0,
+    barnes_hut_optimize=True,
+    barnes_hut_theta=2.2,
+    scaling_ratio=2.0,
+    strong_gravity_mode=False,
+    gravity=1.0,
+    verbose=True,
+)
 
-## Contributors
+# For a NetworkX graph:
+positions = forceatlas2.forceatlas2_networkx_layout(G, pos=None, iterations=100)
 
-Contributions are highly welcome. Please submit your pull requests and become a collaborator.
+# For an igraph graph:
+layout_obj = forceatlas2.forceatlas2_igraph_layout(igraph_graph, pos=None, iterations=100)
+```
 
-## Copyright
+## References
 
-    Copyright (C) 2017 Bhargav Chippada bhargavchippada19@gmail.com.
-    Licensed under the GNU GPLv3.
+- **ForceAtlas2 Paper:**  
+  Jacomy, M., Venturini, T., Heymann, S., & Bastian, M. (2014).  
+  *ForceAtlas2, a continuous graph layout algorithm for handy network visualization designed for the Gephi software.*  
+  PLoS ONE, 9(6), e98679.  
+  [DOI: 10.1371/journal.pone.0098679](https://doi.org/10.1371/journal.pone.0098679)
 
-The files are heavily based on the java files included in Gephi, git revision 2b9a7c8 and Max Shinn's port to python of the algorithm. Here I include the copyright information from those files:
+## Contributing
 
-    Copyright 2008-2011 Gephi
-    Authors : Mathieu Jacomy <mathieu.jacomy@gmail.com>
-    Website : http://www.gephi.org
-    Copyright 2011 Gephi Consortium. All rights reserved.
-    Portions Copyrighted 2011 Gephi Consortium.
-    The contents of this file are subject to the terms of either the
-    GNU General Public License Version 3 only ("GPL") or the Common
-    Development and Distribution License("CDDL") (collectively, the
-    "License"). You may not use this file except in compliance with
-    the License.
+Contributions, bug reports, and feature requests are welcome!  
+Please open an issue or submit a pull request on [GitHub](https://github.com/irahorecka/pyforceatlas2).
 
-    <https://github.com/mwshinn/forceatlas2-python>
-    Copyright 2016 Max Shinn <mws41@cam.ac.uk>
-    Available under the GPLv3
+## License
 
-    Also, thanks to Eugene Bosiakov <https://github.com/bosiakov/fa2l>
+This project is licensed under the GNU General Public License v3.0 (GPLv3).  
+See the [LICENSE](LICENSE) file for details.  
+For more information, visit [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).
