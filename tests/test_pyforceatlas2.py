@@ -3,9 +3,9 @@ tests/test_pyforceatlas2.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-import pytest
-import numpy as np
 import networkx as nx
+import numpy as np
+import pytest
 
 from pyforceatlas2 import pyforceatlas2 as paf2
 

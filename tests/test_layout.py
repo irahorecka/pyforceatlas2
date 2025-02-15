@@ -4,6 +4,7 @@ tests/test_layout.py
 """
 
 import math
+
 import pytest
 
 from pyforceatlas2 import layout
