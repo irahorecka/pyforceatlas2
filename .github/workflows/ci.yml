@@ -2,9 +2,7 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
   workflow_dispatch:
   schedule:
     # Run every Sunday at 00:00 UTC
