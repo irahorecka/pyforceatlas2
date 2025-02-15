@@ -109,11 +109,8 @@ layout_obj = forceatlas2.forceatlas2_igraph_layout(igraph_graph, pos=None, itera
 
 ## Contributing
 
-Contributions, bug reports, and feature requests are welcome!  
-Please open an issue or submit a pull request on [GitHub](https://github.com/irahorecka/pyforceatlas2).
+Contributions, bug reports, and feature requests are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/irahorecka/pyforceatlas2).
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPLv3).  
-See the [LICENSE](LICENSE) file for details.  
-For more information, visit [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).
+This project is licensed under the [GNU General Public License v3.0 (GPLv3)](https://www.gnu.org/licenses/gpl-3.0.html). See the [LICENSE](LICENSE) file for details.
