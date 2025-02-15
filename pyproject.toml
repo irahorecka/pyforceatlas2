@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyforceatlas2"
-version = "0.0.1"
+dynamic = ["version"]  # Indicates that version is determined dynamically
 description = "Fast Gephi's ForceAtlas2 graph layout algorithm written in Python for Python."
 readme = "README.md"
 requires-python = ">=3.8"
