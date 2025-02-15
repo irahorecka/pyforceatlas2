@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 def find_version():
     """Function to find the version string in the __init__.py file."""
-    with open("risk/__init__.py", "r", encoding="utf-8") as f:
+    with open("pyforceatlas2/__init__.py", "r", encoding="utf-8") as f:
         version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if version_match:
             return version_match.group(1)
