@@ -1,0 +1,6 @@
+black
+build
+flake8
+pylint
+pytest
+twine
