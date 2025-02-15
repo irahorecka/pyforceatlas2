@@ -1,28 +1,27 @@
-black: ## Black format every python file to line length 100
-	find . -type f -name "*.py" | xargs black --line-length=100;
-	make clean;
+# Define Makefile targets for various tasks
 
-github-test: ## Run pytest for every test file in GitHub Actions
-	pytest -W ignore -vv --tb=short -k .;
+black: ## Format Python files using Black
+	black --line-length=100 ./
 
-test: ## Run pytest for every test file
-	make github-test;
-	make clean;
+flake8: ## Run Flake8 on all Python files
+	find . -type f -name "*.py" | xargs flake8
 
-flake8: ## Flake8 every python file
-	find . -type f -name "*.py" -a | xargs flake8;
+pylint: ## Run pylint on all Python files
+	find . -type f -name "*.py" | xargs pylint
 
-pylint: ## Pylint every python file
-	find . -type f -name "*.py" -a | xargs pylint;
+test: ## Run tests using pytest
+	pytest -vv --tb=auto ./
 
 build: ## Build package distribution files
-	flit build;
+	python -m build
 
-publish: ## Publish package distribution files to pypi
-	flit publish;
-	make clean;
+publish: ## Publish package distribution files to PyPI
+	twine upload dist/*
+	make clean
 
-clean: ## Remove package distribution files, caches, and .DS_Store
-	rm -rf ./pyforceatlas2.egg-info ./dist ./build;
-	find . -type d -name "__pycache__" -o -name ".pytest_cache" | xargs rm -r;
-	find . -type f -name ".DS_Store" | xargs rm -r;
+clean: ## Remove caches, checkpoints, and distribution artifacts
+	find . \( -name ".DS_Store" -o -name ".ipynb_checkpoints" -o -name "__pycache__" -o -name ".pytest_cache" \) | xargs rm -rf
+	rm -rf dist/ build/ *.egg-info
+
+help: ## Display this help message
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "%-15s %s\n", $$1, $$2}'
