@@ -11,7 +11,7 @@ References:
       https://doi.org/10.1371/journal.pone.0098679
 """
 
-from math import sqrt, log
+from math import log, sqrt
 
 
 class Node:
@@ -76,6 +76,7 @@ def lin_repulsion(node_a, node_b, coefficient=0.0):
             Repulsion coefficient. Higher values push nodes apart more strongly.
             Typical range: 1.0 to 10.0 (or higher for very dense networks).
     """
+    # Compute distance between nodes
     dx = node_a.x - node_b.x
     dy = node_a.y - node_b.y
     dist_sq = dx * dx + dy * dy
@@ -99,6 +100,7 @@ def lin_repulsion_region(node, region, coefficient=0.0):
         coefficient (float, optional):
             Repulsion coefficient (same meaning as in lin_repulsion).
     """
+    # Compute distance to region's center of mass
     dx = node.x - region.mass_center_x
     dy = node.y - region.mass_center_y
     dist_sq = dx * dx + dy * dy
@@ -123,6 +125,7 @@ def lin_gravity(node, gravity):
             Gravitational constant. Typical range: 0.0 to 5.0.
             If 0.0, there's effectively no gravity.
     """
+    # Compute distance to origin
     dx = node.x
     dy = node.y
     distance = sqrt(dx * dx + dy * dy)
@@ -149,6 +152,7 @@ def strong_gravity(node, gravity, coefficient=0.0):
             Additional scaling factor, e.g. 1.0 to 5.0.
             Increase to force a more compact layout.
     """
+    # Skip the origin (0,0) to avoid division by zero
     if node.x != 0 or node.y != 0:
         factor = coefficient * node.mass * gravity
         node.dx -= node.x * factor
@@ -183,10 +187,12 @@ def lin_attraction(
             If True, uses log(1 + distance)/distance for the attraction,
             highlighting clusters more strongly (LinLog model).
     """
+    # Compute the distance between nodes
     dx = node_a.x - node_b.x
     dy = node_a.y - node_b.y
 
     if lin_log_mode:
+        # LinLog mode: log(1 + distance) / distance
         distance = sqrt(dx * dx + dy * dy)
         if distance > 0:
             log_factor = log(1 + distance) / distance
@@ -204,6 +210,7 @@ def lin_attraction(
         else:
             factor = -coefficient * edge_weight / node_a.mass
 
+    # Apply the force to both nodes
     node_a.dx += dx * factor
     node_a.dy += dy * factor
     node_b.dx -= dx * factor
@@ -223,6 +230,7 @@ def apply_repulsion(nodes, coefficient):
             Repulsion coefficient. Typically 1.0 to 10.0 or more
             for very dense networks.
     """
+    # Apply repulsion forces between all nodes
     for i, node in enumerate(nodes):
         for other in nodes[:i]:
             lin_repulsion(node, other, coefficient)
@@ -248,6 +256,7 @@ def apply_gravity(nodes, gravity, scaling_ratio, use_strong_gravity=False):
             Whether to use strong gravity. Defaults to False.
             If True, pulls distant nodes in more aggressively.
     """
+    # Apply gravity to all nodes
     for node in nodes:
         if use_strong_gravity:
             # scaling_ratio is used here as the coefficient
@@ -281,6 +290,7 @@ def apply_attraction(
         lin_log_mode (bool, optional):
             If True, use LinLog mode for the attraction.
     """
+    # Apply attraction forces along edges
     for edge in edges:
         if edge_weight_influence == 0:
             effective_weight = 1
@@ -289,6 +299,7 @@ def apply_attraction(
         else:
             effective_weight = pow(edge.weight, edge_weight_influence)
 
+        # Apply attraction between nodes
         lin_attraction(
             nodes[edge.node1],
             nodes[edge.node2],
@@ -332,6 +343,7 @@ class Region:
 
         Typically called after creating or subdividing the region.
         """
+        # Update mass and center of mass
         if len(self.nodes) > 1:
             total_mass = 0.0
             sum_x = 0.0
@@ -340,10 +352,12 @@ class Region:
                 total_mass += node.mass
                 sum_x += node.x * node.mass
                 sum_y += node.y * node.mass
+
             self.mass = total_mass
             self.mass_center_x = sum_x / total_mass
             self.mass_center_y = sum_y / total_mass
 
+            # Compute the "size" of the region
             max_distance = 0.0
             for node in self.nodes:
                 distance = sqrt(
@@ -351,6 +365,7 @@ class Region:
                 )
                 # '2 * distance' ensures we cover diameter, not just radius
                 max_distance = max(max_distance, 2 * distance)
+
             self.size = max_distance
 
     def build_subregions(self):
@@ -363,9 +378,9 @@ class Region:
         if len(self.nodes) <= 1:
             return
 
+        # Split nodes into four quadrants based on mass center
         top_left, bottom_left = [], []
         top_right, bottom_right = [], []
-
         for node in self.nodes:
             if node.x < self.mass_center_x:
                 if node.y < self.mass_center_y:
@@ -378,6 +393,7 @@ class Region:
                 else:
                     top_right.append(node)
 
+        # Create subregions for each quadrant
         quadrants = [top_left, bottom_left, top_right, bottom_right]
         for quadrant in quadrants:
             if quadrant:
@@ -462,16 +478,15 @@ def adjust_speed_and_apply_forces(nodes, speed, speed_efficiency, jitter_toleran
             A dictionary with updated 'speed' and 'speed_efficiency'.
             Example: {"speed": new_speed, "speed_efficiency": new_efficiency}
     """
+    # Compute global swinging and traction
     total_swing = 0.0
     total_traction = 0.0
-
-    # Compute global swinging and traction
     for node in nodes:
         delta_dx = node.old_dx - node.dx
         delta_dy = node.old_dy - node.dy
         swing = sqrt(delta_dx * delta_dx + delta_dy * delta_dy)
         total_swing += node.mass * swing
-
+        # Traction is proportional to the "speed" of the node
         traction = (
             0.5 * node.mass * sqrt((node.old_dx + node.dx) ** 2 + (node.old_dy + node.dy) ** 2)
         )
@@ -481,7 +496,6 @@ def adjust_speed_and_apply_forces(nodes, speed, speed_efficiency, jitter_toleran
     estimated_jitter = 0.05 * sqrt(len(nodes))
     min_jitter = sqrt(estimated_jitter)
     max_jitter = 10
-
     # jt is the "actual" jitter threshold
     jt = jitter_tolerance * max(
         min_jitter, min(max_jitter, estimated_jitter * total_traction / (len(nodes) ** 2))

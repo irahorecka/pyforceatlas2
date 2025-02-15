@@ -12,12 +12,13 @@ References:
 """
 
 import random
+
+import igraph
+import networkx as nx
 import numpy as np
 import scipy
-from tqdm import tqdm
-import networkx as nx
-import igraph
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 from pyforceatlas2 import layout
 
@@ -118,6 +119,7 @@ class ForceAtlas2:
         Raises:
             ValueError: If graph is not a valid NumPy or SciPy structure, or not square.
         """
+        # Check graph type and shape
         is_sparse = False
         if isinstance(graph, np.ndarray):
             assert graph.shape[0] == graph.shape[1], "Graph is not a square matrix."
@@ -133,6 +135,7 @@ class ForceAtlas2:
         else:
             raise ValueError("Graph must be a NumPy array or a SciPy sparse matrix.")
 
+        # Initialize nodes with mass = (degree + 1)
         nodes = []
         num_nodes = graph.shape[0]
         for i in range(num_nodes):
@@ -148,7 +151,6 @@ class ForceAtlas2:
             node.old_dy = 0.0
             node.dx = 0.0
             node.dy = 0.0
-
             # Assign positions
             if pos is None:
                 node.x = random.random()
@@ -166,6 +168,7 @@ class ForceAtlas2:
             if edge_index[1] <= edge_index[0]:
                 # Skip duplicates (only handle upper triangle for undirected)
                 continue
+
             edge = layout.Edge()
             edge.node1 = edge_index[0]
             edge.node2 = edge_index[1]
@@ -201,10 +204,9 @@ class ForceAtlas2:
         Raises:
             ValueError: If the graph is invalid or not square.
         """
+        # Initialize parameters and the node/edge structures
         speed = 1.0
         speed_efficiency = 1.0
-
-        # Initialize the node and edge structures
         nodes, edges = self.init(graph, pos)
 
         # If distributing attraction, we compute a reference "outbound_att_comp"
@@ -242,7 +244,6 @@ class ForceAtlas2:
                 scaling_ratio=self.scaling_ratio,
                 use_strong_gravity=self.strong_gravity_mode,
             )
-
             # Apply attraction along edges
             layout.apply_attraction(
                 nodes,
@@ -289,7 +290,6 @@ class ForceAtlas2:
 
         # Convert to SciPy sparse adjacency
         sparse_matrix = nx.to_scipy_sparse_array(graph, dtype="f", format="lil", weight=weight_attr)
-
         if pos is None:
             layout_coords = self.forceatlas2(sparse_matrix, pos=None, iterations=iterations)
         else:
@@ -355,7 +355,6 @@ class ForceAtlas2:
 
         # Build adjacency matrix
         adj_matrix = to_sparse(graph, weight_attr)
-
         # Compute layout coords
         coordinates = self.forceatlas2(adj_matrix, pos=pos, iterations=iterations)
 
