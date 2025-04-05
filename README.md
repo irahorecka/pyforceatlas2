@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/pyforceatlas2.svg)](https://pypi.python.org/pypi/pyforceatlas2)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![continuous-integration](https://github.com/irahorecka/pyforceatlas2/workflows/continuous-integration/badge.svg)](https://github.com/irahorecka/pyforceatlas2/actions)
+[![tests](https://github.com/irahorecka/pyforceatlas2/workflows/tests/badge.svg)](https://github.com/irahorecka/pyforceatlas2/actions)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-purple.svg)](https://raw.githubusercontent.com/username/pyforceatlas2/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.1371/journal.pone.0098679-blue)](https://doi.org/10.1371/journal.pone.0098679)
 
