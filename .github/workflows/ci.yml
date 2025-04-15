@@ -43,5 +43,6 @@ jobs:
 
       - name: Run tests with pytest
         run: |
+          pip install "setuptools<77.0"
           pip install -e . > /dev/null
           pytest --maxfail=1 --disable-warnings -q
