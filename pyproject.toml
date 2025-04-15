@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyforceatlas2"
-dynamic = ["version"]  # Indicates that version is determined dynamically
+dynamic = ["version"]
 description = "Fast Gephi's ForceAtlas2 graph layout algorithm written in Python for Python."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
+license = { text = "GPL-3.0-only" }
+license-files = ["LICENSE"]
 authors = [
     { name = "Ira Horecka", email = "ira89@icloud.com" }
 ]
@@ -34,3 +35,13 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://github.com/irahorecka/pyforceatlas2"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["pyforceatlas2"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pyforceatlas2.__version__" }
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
