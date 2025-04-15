@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Fast Gephi's ForceAtlas2 graph layout algorithm written in Python for Python."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "GPL-3.0-only" }
+license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 authors = [
     { name = "Ira Horecka", email = "ira89@icloud.com" }
@@ -24,7 +24,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
