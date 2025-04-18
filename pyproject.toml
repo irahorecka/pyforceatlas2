@@ -38,7 +38,9 @@ text = "GPL-3.0-or-later"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["pyforceatlas2"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pyforceatlas2.__version__" }
