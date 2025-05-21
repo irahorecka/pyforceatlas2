@@ -24,14 +24,15 @@ from pyforceatlas2 import layout
 
 
 class ForceAtlas2:
-    """Implementation of the ForceAtlas2 layout algorithm, wrapping the functions in `layout.py`.
+    """
+    Implementation of the ForceAtlas2 layout algorithm, wrapping the functions in `layout.py`.
 
     This class orchestrates the overall layout process:
       - Builds node/edge structures from an adjacency matrix (or from NetworkX/igraph).
       - Runs iterative repulsion, gravity, and attraction steps.
       - Adjusts speed each iteration for a continuous layout experience.
 
-    Parameters:
+    Args:
         outbound_attraction_distribution (bool):
             If True, distributes attraction along outbound edges to dissuade hubs.
             In practice, this divides the attraction force by node mass, so
@@ -95,7 +96,8 @@ class ForceAtlas2:
         self.verbose = verbose
 
     def init(self, graph, pos=None):
-        """Initialize nodes and edges from the input graph (NumPy array or SciPy sparse matrix).
+        """
+        Initialize nodes and edges from the input graph (NumPy array or SciPy sparse matrix).
 
         - Checks that `graph` is square and symmetric (undirected).
         - Builds a list of `Node` objects, assigning mass = (degree + 1).
@@ -175,10 +177,20 @@ class ForceAtlas2:
             edge.weight = graph[tuple(edge_index)]
             edges.append(edge)
 
+        # Cache flat edge arrays for vectorized kernels
+        rows, cols = graph.nonzero()
+        mask = cols > rows
+        self._edge_i = rows[mask]
+        self._edge_j = cols[mask]
+        # use .A1 for sparse, else direct indexing
+        vals = graph[self._edge_i, self._edge_j]
+        self._edge_w = (vals.A1 if hasattr(vals, "A1") else vals).astype(float)
+
         return nodes, edges
 
     def forceatlas2(self, graph, pos=None, iterations=100):
-        """Compute node positions using the ForceAtlas2 layout algorithm.
+        """
+        Compute node positions using the ForceAtlas2 layout algorithm.
 
         Iteratively:
           1. Reset forces to 0.
@@ -235,7 +247,7 @@ class ForceAtlas2:
                 root_region.apply_force_on_nodes(nodes, self.barnes_hut_theta, self.scaling_ratio)
             else:
                 # For small graphs, we can do pairwise repulsion
-                layout.apply_repulsion(nodes, self.scaling_ratio)
+                layout.apply_repulsion(nodes, self.barnes_hut_theta, self.scaling_ratio)
 
             # Apply gravity (strong or linear)
             layout.apply_gravity(
@@ -264,7 +276,8 @@ class ForceAtlas2:
         return [(node.x, node.y) for node in nodes]
 
     def forceatlas2_networkx_layout(self, graph, pos=None, iterations=100, weight_attr=None):
-        """Compute a layout for a NetworkX graph using the ForceAtlas2 algorithm.
+        """
+        Compute a layout for a NetworkX graph using the ForceAtlas2 algorithm.
 
         Converts the NetworkX graph to a SciPy sparse matrix, then calls `forceatlas2()`.
 
@@ -301,7 +314,8 @@ class ForceAtlas2:
         return dict(zip(graph.nodes(), layout_coords))
 
     def forceatlas2_igraph_layout(self, graph, pos=None, iterations=100, weight_attr=None):
-        """Compute a layout for an igraph.Graph using the ForceAtlas2 algorithm.
+        """
+        Compute a layout for an igraph.Graph using the ForceAtlas2 algorithm.
 
         1. Convert igraph to a SciPy sparse adjacency.
         2. Optionally supply initial positions.

@@ -13,9 +13,13 @@ References:
 
 from math import log, sqrt
 
+import numpy as np
+from scipy.spatial import cKDTree
+
 
 class Node:
-    """Represents a node in the ForceAtlas2 algorithm.
+    """
+    Represents a node in the ForceAtlas2 algorithm.
 
     Attributes:
         mass (float):
@@ -47,7 +51,8 @@ class Node:
 
 
 class Edge:
-    """Represents an edge connecting two nodes in the ForceAtlas2 algorithm.
+    """
+    Represents an edge connecting two nodes in the ForceAtlas2 algorithm.
 
     Attributes:
         node1 (int):
@@ -65,7 +70,8 @@ class Edge:
 
 
 def lin_repulsion(node_a, node_b, coefficient=0.0):
-    """Apply a linear (Fruchterman-Reingold style) repulsion force between two nodes.
+    """
+    Apply a linear (Fruchterman-Reingold style) repulsion force between two nodes.
 
     F_rep ~ coefficient * (mass_a * mass_b) / distance^2
 
@@ -89,7 +95,8 @@ def lin_repulsion(node_a, node_b, coefficient=0.0):
 
 
 def lin_repulsion_region(node, region, coefficient=0.0):
-    """Apply an approximate repulsion force from a region's center of mass (Barnes-Hut).
+    """
+    Apply an approximate repulsion force from a region's center of mass (Barnes-Hut).
 
     Instead of pairwise repulsions for all nodes, we approximate
     a group of distant nodes by their center of mass.
@@ -111,7 +118,8 @@ def lin_repulsion_region(node, region, coefficient=0.0):
 
 
 def lin_gravity(node, gravity):
-    """Apply a standard gravitational force that attracts the node toward the origin (0, 0).
+    """
+    Apply a standard gravitational force that attracts the node toward the origin (0, 0).
 
     F_gravity ~ node.mass * gravity
 
@@ -136,7 +144,8 @@ def lin_gravity(node, gravity):
 
 
 def strong_gravity(node, gravity, coefficient=0.0):
-    """Apply a 'strong gravity' force to a node, pulling it more aggressively to (0,0).
+    """
+    Apply a 'strong gravity' force to a node, pulling it more aggressively to (0,0).
 
     F_strong_gravity ~ coefficient * node.mass * gravity * distance
 
@@ -162,7 +171,8 @@ def strong_gravity(node, gravity, coefficient=0.0):
 def lin_attraction(
     node_a, node_b, edge_weight, distributed_attraction, coefficient=0.0, lin_log_mode=False
 ):
-    """Apply an attractive force between two connected nodes.
+    """
+    Apply an attractive force between two connected nodes.
 
     - In linear mode:
         F_attr ~ -coefficient * edge_weight
@@ -217,8 +227,9 @@ def lin_attraction(
     node_b.dy -= dy * factor
 
 
-def apply_repulsion(nodes, coefficient):
-    """Apply pairwise repulsion forces between all nodes (O(n^2)).
+def apply_repulsion(nodes, theta, coefficient):
+    """
+    Apply pairwise repulsion forces between all nodes (O(n^2)).
 
     For large graphs, you typically want Barnes-Hut approximation
     instead (using Region). But for smaller graphs (<= 1,000 nodes),
@@ -226,18 +237,55 @@ def apply_repulsion(nodes, coefficient):
 
     Args:
         nodes (list of Node): All nodes in the graph.
+        theta (float):
+            Barnes-Hut approximation parameter.
+            Typical range: 0.5 to 2.0.
+            Lower => more accurate, slower.
+            Higher => less accurate, faster.
         coefficient (float):
             Repulsion coefficient. Typically 1.0 to 10.0 or more
             for very dense networks.
     """
-    # Apply repulsion forces between all nodes
+    # Pull x,y,mass into arrays once
+    n = len(nodes)
+    xs = np.fromiter((node.x for node in nodes), float, count=n)
+    ys = np.fromiter((node.y for node in nodes), float, count=n)
+    ms = np.fromiter((node.mass for node in nodes), float, count=n)
+    dx = np.zeros(n, float)
+    dy = np.zeros(n, float)
+
+    # Build tree
+    tree = cKDTree(np.stack((xs, ys), axis=1))
+
+    # For each node, query neighbors within theta, approximate forces
+    for i in range(n):
+        xi, yi = xs[i], ys[i]
+        idxs = tree.query_ball_point((xi, yi), r=theta)
+        if len(idxs) <= 1:
+            continue
+        nbrs = np.array(idxs, int)
+        xj, yj, mj = xs[nbrs], ys[nbrs], ms[nbrs]
+        dxi = xi - xj
+        dyi = yi - yj
+        dist2 = dxi * dxi + dyi * dyi + 1e-9
+        inv = 1.0 / np.sqrt(dist2)
+        f = coefficient * ms[i] * mj / dist2 * inv
+        fx = np.sum(dxi * f)
+        fy = np.sum(dyi * f)
+        dx[i] += fx
+        dy[i] += fy
+        dx[nbrs] -= dxi * f
+        dy[nbrs] -= dyi * f
+
+    # Write back
     for i, node in enumerate(nodes):
-        for other in nodes[:i]:
-            lin_repulsion(node, other, coefficient)
+        node.dx += float(dx[i])
+        node.dy += float(dy[i])
 
 
 def apply_gravity(nodes, gravity, scaling_ratio, use_strong_gravity=False):
-    """Apply gravitational forces to all nodes.
+    """
+    Apply gravitational forces to all nodes.
 
     This either uses standard gravity or strong gravity
     depending on `use_strong_gravity`.
@@ -256,58 +304,103 @@ def apply_gravity(nodes, gravity, scaling_ratio, use_strong_gravity=False):
             Whether to use strong gravity. Defaults to False.
             If True, pulls distant nodes in more aggressively.
     """
-    # Apply gravity to all nodes
-    for node in nodes:
-        if use_strong_gravity:
-            # scaling_ratio is used here as the coefficient
-            strong_gravity(node, gravity, scaling_ratio)
-        else:
-            lin_gravity(node, gravity)
+    # Extract positions and masses
+    xs = np.fromiter((node.x for node in nodes), dtype=float, count=len(nodes))
+    ys = np.fromiter((node.y for node in nodes), dtype=float, count=len(nodes))
+    masses = np.fromiter((node.mass for node in nodes), dtype=float, count=len(nodes))
+
+    if not use_strong_gravity:
+        # linear gravity: F = mass * gravity / distance
+        dist = np.hypot(xs, ys)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            factors = masses * gravity / dist * scaling_ratio
+        factors[dist == 0] = 0.0
+        for idx, node in enumerate(nodes):
+            node.dx -= xs[idx] * factors[idx]
+            node.dy -= ys[idx] * factors[idx]
+    else:
+        # strong gravity: F = coefficient * mass * gravity
+        coeff = scaling_ratio
+        for idx, node in enumerate(nodes):
+            factor = coeff * masses[idx] * gravity
+            node.dx -= node.x * factor
+            node.dy -= node.y * factor
 
 
 def apply_attraction(
     nodes, edges, distributed_attraction, coefficient, edge_weight_influence, lin_log_mode=False
 ):
-    """Apply attractive forces along edges between nodes.
-
-    The actual attraction formula is in `lin_attraction`.
-    Here we handle the edge-weight influence exponent.
+    """
+    Apply attractive forces along edges between nodes. Optimized vectorized implementation using NumPy.
 
     Args:
         nodes (list of Node):
             All nodes in the graph.
         edges (list of Edge):
-            Edges with references to node indices and weights.
+            All edges in the graph.
         distributed_attraction (bool):
-            If True, divide attraction by node mass (see lin_attraction).
+            If True, divides the attraction by node_a.mass.
+            Helps limit the pull from nodes with large mass.
         coefficient (float):
-            Attraction coefficient, typically 1.0 to 10.0.
+            Overall attraction coefficient. Typical range: 1.0 to 10.0.
         edge_weight_influence (float):
-            Exponent for edge weight.
-            - 0 => all edges considered weight 1
-            - 1 => direct use of edge.weight
-            - >1 => amplify differences in edge weight
+            Exponent for edge weight influence on attraction.
+            0.0 means no influence, 1.0 means linear influence,
+            and >1.0 means stronger influence for heavier edges.
         lin_log_mode (bool, optional):
-            If True, use LinLog mode for the attraction.
+            If True, uses log(1 + distance)/distance for the attraction,
+            highlighting clusters more strongly (LinLog model).
     """
-    # Apply attraction forces along edges
-    for edge in edges:
-        if edge_weight_influence == 0:
-            effective_weight = 1
-        elif edge_weight_influence == 1:
-            effective_weight = edge.weight
-        else:
-            effective_weight = pow(edge.weight, edge_weight_influence)
+    # Number of nodes and edges
+    n = len(nodes)
+    m = len(edges)
 
-        # Apply attraction between nodes
-        lin_attraction(
-            nodes[edge.node1],
-            nodes[edge.node2],
-            effective_weight,
-            distributed_attraction,
-            coefficient,
-            lin_log_mode,
-        )
+    # Extract node arrays
+    x = np.fromiter((node.x for node in nodes), dtype=float, count=n)
+    y = np.fromiter((node.y for node in nodes), dtype=float, count=n)
+    dx = np.fromiter((node.dx for node in nodes), dtype=float, count=n)
+    dy = np.fromiter((node.dy for node in nodes), dtype=float, count=n)
+
+    # Build edge arrays
+    ei = np.empty(m, dtype=int)
+    ej = np.empty(m, dtype=int)
+    ew = np.empty(m, dtype=float)
+    for i, edge in enumerate(edges):
+        ei[i] = edge.node1
+        ej[i] = edge.node2
+        if edge_weight_influence == 0:
+            ew[i] = 1.0
+        elif edge_weight_influence == 1:
+            ew[i] = edge.weight
+        else:
+            ew[i] = edge.weight**edge_weight_influence
+
+    # Compute vectors and distances
+    dxi = x[ej] - x[ei]
+    dyi = y[ej] - y[ei]
+    dist = np.hypot(dxi, dyi) + 1e-9
+
+    # Force magnitude
+    if lin_log_mode:
+        raw = np.log1p(dist)
+    else:
+        raw = dist
+    force = raw * ew * coefficient
+    if distributed_attraction:
+        masses = np.fromiter((node.mass for node in nodes), dtype=float, count=n)
+        force /= masses.mean()
+
+    # Normalize and accumulate
+    norm = force / dist
+    np.add.at(dx, ei, dxi * norm)
+    np.add.at(dy, ei, dyi * norm)
+    np.add.at(dx, ej, -dxi * norm)
+    np.add.at(dy, ej, -dyi * norm)
+
+    # Write back
+    for idx, node in enumerate(nodes):
+        node.dx = float(dx[idx])
+        node.dy = float(dy[idx])
 
 
 class Region:
@@ -338,7 +431,8 @@ class Region:
         self.update_mass_and_geometry()
 
     def update_mass_and_geometry(self):
-        """Update the region's mass, center of mass, and size
+        """
+        Update the region's mass, center of mass, and size
         based on the nodes it contains.
 
         Typically called after creating or subdividing the region.
@@ -369,7 +463,8 @@ class Region:
             self.size = max_distance
 
     def build_subregions(self):
-        """Subdivide the region into up to four quadrants based on node positions.
+        """
+        Subdivide the region into up to four quadrants based on node positions.
 
         This is part of the standard Barnes-Hut oct/quadtree approach:
         - If there's more than one node, we recursively partition.
@@ -405,7 +500,8 @@ class Region:
             subregion.build_subregions()
 
     def apply_force(self, node, theta, coefficient=0.0):
-        """Apply repulsion force from this region onto a node using Barnes-Hut approximation.
+        """
+        Apply repulsion force from this region onto a node using Barnes-Hut approximation.
 
         If (distance * theta) > self.size, we treat this region as a single
         entity (use lin_repulsion_region). Otherwise, we recurse into subregions.
@@ -436,7 +532,8 @@ class Region:
                     subregion.apply_force(node, theta, coefficient)
 
     def apply_force_on_nodes(self, nodes, theta, coefficient=0.0):
-        """Apply Barnes-Hut repulsion forces on a list of nodes,
+        """
+        Apply Barnes-Hut repulsion forces on a list of nodes,
         iterating over each node and calling apply_force.
 
         Args:
@@ -452,7 +549,8 @@ class Region:
 
 
 def adjust_speed_and_apply_forces(nodes, speed, speed_efficiency, jitter_tolerance):
-    """Adjust simulation speed and update node positions based on the accumulated forces.
+    """
+    Adjust simulation speed and update node positions based on the accumulated forces.
 
     This step is crucial for a 'continuous' layout:
     - We compute each node's "swing" (difference in direction from previous iteration).
