@@ -184,12 +184,10 @@ def test_apply_repulsion():
     a.x, a.y = 0.0, 0.0
     b.x, b.y = 1.0, 0.0
     a.dx = a.dy = b.dx = b.dy = 0.0
-
-    layout.apply_repulsion([a, b], coefficient=1.0)
-    # For a and b, dx = 0-1 = -1, dist_sq = 1, factor = (1*2*2)/1 = 4.
-    # Expected: a.dx += -4, b.dx += 4.
-    assert a.dx == pytest.approx(-4.0)
-    assert b.dx == pytest.approx(4.0)
+    layout.apply_repulsion([a, b], coefficient=1.0, theta=1.0)
+    # dx = 0-1 = -1, dy = 0-0 = 0, dist_sq = 1, factor = (2*2*2)/1 = 8
+    assert a.dx == pytest.approx(-8.0)
+    assert b.dx == pytest.approx(8.0)
 
 
 def test_apply_gravity_linear():

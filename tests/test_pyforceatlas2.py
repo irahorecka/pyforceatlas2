@@ -84,7 +84,8 @@ def test_forceatlas2_igraph_layout():
 
 
 def test_forceatlas2_user_input_networkx_custom():
-    """Create a complete NetworkX graph of 5 nodes. Provide a custom initial position dictionary.
+    """
+    Create a complete NetworkX graph of 5 nodes. Provide a custom initial position dictionary.
     Verify that the returned layout is a dict mapping nodes to (x,y) tuples.
     """
     G = nx.complete_graph(5)
@@ -119,7 +120,8 @@ def test_forceatlas2_user_input_invalid_graph():
 
 
 def test_forceatlas2_user_input_invalid_positions():
-    """Passing an invalid type for initial positions (e.g., a string)
+    """
+    Passing an invalid type for initial positions (e.g., a string)
     should raise an AssertionError.
     """
     G = nx.complete_graph(5)
@@ -129,7 +131,8 @@ def test_forceatlas2_user_input_invalid_positions():
 
 
 def test_forceatlas2_api_consistency():
-    """Run the ForceAtlas2 layout on a simple path graph twice:
+    """
+    Run the ForceAtlas2 layout on a simple path graph twice:
     once with random initial positions and once with user-provided positions.
     Verify that both return valid dictionaries mapping each node to a (x, y) tuple.
     """
